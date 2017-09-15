@@ -2,9 +2,12 @@ from django.db import models
 from django.urls import reverse
 # User是一个自带的模型类，里面是用户的字段
 from django.contrib.auth.models import User
+from markdown import Markdown
+from django.utils.html import strip_tags
 
 class Category(models.Model):
     name = models.CharField(max_length=64)
+    # annotate产生的隐藏属性：num_posts
 
     def __str__(self):
         return self.name
@@ -43,6 +46,15 @@ class Post(models.Model):
     def get_absolute_url(self):
         #使用reverse函数，生成一个url，例如 post / 1
         return reverse('blog:detail',kwargs={'pk':self.pk}) #
+
+    def save(self,*args,**kwargs):
+        if not self.excerpt:
+            md = Markdown(extensions=[
+                'markdown.extensions.extra',
+                'markdown.extensions.codehilite',
+            ])
+            self.excerpt = strip_tags(md.convert(self.body))[:32]
+        super().save(*args,**kwargs)
 
     def __str__(self):
         return self.title
